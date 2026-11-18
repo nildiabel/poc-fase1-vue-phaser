@@ -1,49 +1,29 @@
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import Phaser from 'phaser';
-import { MainScene } from '../game/MainScene';
+import { MapScene } from '../game/MapScene';
 
-// Rep les dades d'App.vue per sincronitzar-les amb l'escena.
-const props = defineProps(['nomUsuari', 'colorAvatar', 'estatAvatar', 'pausat']);
+// Declarem l'esdeveniment que emetrem cap al component pare (App.vue)
+const emit = defineEmits(['mapaCarregat']);
 const contenidor = ref(null);
 let game = null;
-
-const sincronitzarEscena = () => {
-  const escena = game?.scene.getScene('MainScene');
-  if (!escena?.sys.isActive()) return;
-
-  escena.actualitzarNom(props.nomUsuari);
-  escena.actualitzarColor(props.colorAvatar);
-  escena.actualitzarEstat(props.estatAvatar);
-
-  if (props.pausat) {
-    escena.scene.pause();
-  } else {
-    escena.scene.resume();
-  }
-};
 
 onMounted(() => {
   game = new Phaser.Game({
     type: Phaser.AUTO,
-    width: 640,
-    height: 400,
-    backgroundColor: '#1e293b',
+    width: 640, height: 480,    // Mida exacta de 20x15 rajoles de 32x32 px
+    backgroundColor: '#0f172a',
+    pixelArt: true,             // Evita vores borroses entre rajoles (Phaser 4)
     parent: contenidor.value,
-    scene: [MainScene]
+    scene: [MapScene]
   });
 
-  // Sincronitza els valors inicials quan Phaser ja està preparat.
-  game.events.once('ready', sincronitzarEscena);
+  // Escoltem l'esdeveniment emès des de MapScene.create() i el passem a App.vue
+  game.events.on('mapa-carregat', (elements) => {
+    emit('mapaCarregat', elements);
+  });
 });
 
 onUnmounted(() => game?.destroy(true));
-
-// Al mateix nivell que onMounted per observar els canvis de props.
-watch(() => [props.nomUsuari, props.colorAvatar, props.estatAvatar, props.pausat], sincronitzarEscena);
 </script>
-
-<template>
-  <div ref="contenidor"></div>
-</template>
-
+<template><div ref="contenidor"></div></template>
