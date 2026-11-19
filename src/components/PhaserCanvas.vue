@@ -1,49 +1,28 @@
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import Phaser from 'phaser';
-import { MainScene } from '../game/MainScene';
+import { OfficeScene } from '../game/OfficeScene';
 
-// Rep les dades d'App.vue per sincronitzar-les amb l'escena.
-const props = defineProps(['nomUsuari', 'colorAvatar', 'estatAvatar', 'pausat']);
+const emit = defineEmits(['canviZona', 'a-prop-monitor']); // Notificarà a App.vue dels canvis de zona i proximitat
 const contenidor = ref(null);
 let game = null;
-
-const sincronitzarEscena = () => {
-  const escena = game?.scene.getScene('MainScene');
-  if (!escena?.sys.isActive()) return;
-
-  escena.actualitzarNom(props.nomUsuari);
-  escena.actualitzarColor(props.colorAvatar);
-  escena.actualitzarEstat(props.estatAvatar);
-
-  if (props.pausat) {
-    escena.scene.pause();
-  } else {
-    escena.scene.resume();
-  }
-};
 
 onMounted(() => {
   game = new Phaser.Game({
     type: Phaser.AUTO,
-    width: 640,
-    height: 400,
-    backgroundColor: '#1e293b',
+    width: 640, height: 480,      // 40x30 rajoles de 16x16 px
+    backgroundColor: '#0f172a',
+    pixelArt: true,               // Mantenim el pixel art nítid
+    physics: {
+      default: 'arcade',
+      arcade: { gravity: { y: 0 } } // IMPRESCINDIBLE: 0 gravetat en vista zenital!
+    },
     parent: contenidor.value,
-    scene: [MainScene]
+    scene: [OfficeScene]
   });
-
-  // Sincronitza els valors inicials quan Phaser ja està preparat.
-  game.events.once('ready', sincronitzarEscena);
+  game.events.on('canvi-zona', (zona) => emit('canviZona', zona));
+  game.events.on('a-prop-monitor', (monitor) => emit('a-prop-monitor', monitor));
 });
-
 onUnmounted(() => game?.destroy(true));
-
-// Al mateix nivell que onMounted per observar els canvis de props.
-watch(() => [props.nomUsuari, props.colorAvatar, props.estatAvatar, props.pausat], sincronitzarEscena);
 </script>
-
-<template>
-  <div ref="contenidor"></div>
-</template>
-
+<template><div ref="contenidor"></div></template>
